@@ -1,0 +1,13 @@
+.cloud/
+.storage/
+custom_components/
+image/**/*
+www/community/
+
+home-assistant.log
+home-assistant.log1
+home-assistant.log.fault
+home-assistant_v2.db
+home-assistant_v2.db-shm
+home-assistant_v2.db-wal
+secrets.yaml
