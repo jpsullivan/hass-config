@@ -1,0 +1,217 @@
+- id: "1654706149226"
+  alias: Notify devices when dryer has completed dying cycle
+  description:
+    This notifies all registered push-enabled devices (phones, watches,
+    laptops) that the dying machine is finished drying the laundry load.
+  trigger:
+    - platform: state
+      entity_id:
+        - binary_sensor.dryer_dry_completed
+      from: "off"
+      to: "on"
+  condition: []
+  action:
+    - service: notify.mobile_app_joshs_iphone
+      data:
+        message: Clothes have finished drying
+        title: Laundry Room
+    - service: notify.mobile_app_autums_iphone
+      data:
+        message: Clothes have finished drying
+        title: Laundry Room
+    - service: notify.mobile_app_joshs_macbook_pro
+      data:
+        message: Clothes have finished drying
+        title: Laundry Room
+  mode: single
+- id: "1654998858124"
+  alias: Notify devices when washing machine has completed wash cycle
+  description:
+    This notifies all registered push-enabled devices (phones, watches,
+    laptops) that the washing machine is finished washingr the laundry load.
+  trigger:
+    - platform: state
+      entity_id:
+        - binary_sensor.washer_wash_completed
+      from: "off"
+      to: "on"
+  condition: []
+  action:
+    - service: notify.mobile_app_joshs_iphone
+      data:
+        message: Clothes have finished washing
+        title: Laundry Room
+    - service: notify.mobile_app_autums_iphone
+      data:
+        message: Clothes have finished washing
+        title: Laundry Room
+    - service: notify.mobile_app_joshs_macbook_pro
+      data:
+        message: Clothes have finished washing
+        title: Laundry Room
+  mode: single
+- id: "1668563806044"
+  alias: Turn on the garage sconce lights when it gets dark outside
+  description:
+    Uses the Unifi garage camera to detect if it is dark outdoors. If so,
+    turn the sconce lights near the garage on.
+  trigger:
+    - platform: state
+      entity_id:
+        - binary_sensor.garage_is_dark
+      from: "off"
+      to: "on"
+  condition: []
+  action:
+    - type: turn_on
+      device_id: 4fb5a4a6b126a10804e2376b8067e1ef
+      entity_id: switch.shelly_plus_2pm_garage_pendant_lights_switch_output
+      domain: switch
+  mode: single
+- id: "1668563917376"
+  alias: Turn off the garage sconce lights when it is no longer dark outside
+  description:
+    Detects when the Unifi garage camera is no longer detecting whether
+    it's dark outside. When this occurs, turn off the garage sconce lights.
+  trigger:
+    - platform: state
+      entity_id:
+        - binary_sensor.garage_is_dark
+      from: "on"
+      to: "off"
+  condition: []
+  action:
+    - type: turn_off
+      device_id: 4fb5a4a6b126a10804e2376b8067e1ef
+      entity_id: switch.shelly_plus_2pm_garage_pendant_lights_switch_output
+      domain: switch
+  mode: single
+- id: "1669651707651"
+  alias: Home Assistant starts ➔ Update Group - Chores
+  trigger:
+    - platform: homeassistant
+      event: start
+    - platform: event
+      event_type: call_service
+      event_data:
+        domain: group
+        service: reload
+  action:
+    - service: group.set
+      data_template:
+        name: All Chores
+        object_id: chores
+        entities:
+          "{% set ns = namespace(entities=[]) %}\n{% for s in states.input_button
+          if s.object_id.startswith('chore_') %}\n  {% set ns.entities = ns.entities
+          + [ s.entity_id ] %}\n{% endfor %}\n{{ ns.entities }}\n"
+- id: "1669699453785"
+  alias: Baby Monitor - Babyphone On
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - input_boolean.babyphone
+      from: "off"
+      to: "on"
+  condition: []
+  action:
+    - service: ffmpeg.start
+      data: {}
+      target:
+        entity_id: binary_sensor.nursery_room_noise
+  mode: single
+- id: "1669699522736"
+  alias: Baby Monitor - Babyphone Off
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - input_boolean.babyphone
+      from: "on"
+      to: "off"
+  condition: []
+  action:
+    - service: ffmpeg.stop
+      data: {}
+      target:
+        entity_id: binary_sensor.nursery_room_noise
+  mode: single
+- id: "1669699923899"
+  alias: Baby Monitor - Babyphone alarm on
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - binary_sensor.nursery_room_noise
+      from: "Off"
+      to: "On"
+  condition: []
+  action:
+    - service: media_player.volume_set
+      data:
+        volume_level: 0.4
+      target:
+        entity_id: media_player.office_speaker
+    - service: media_player.play_media
+      target:
+        entity_id: media_player.office_speaker
+      data:
+        media_content_id: http://192.168.1.8:9200/babyphone.mp3
+        media_content_type: music
+      metadata: {}
+  mode: single
+- id: "1669700111451"
+  alias: Baby Monitor - Babyphone alarm off
+  description: ""
+  trigger:
+    - platform: state
+      entity_id:
+        - binary_sensor.nursery_room_noise
+      from: "On"
+      to: "Off"
+  condition: []
+  action:
+    - service: media_player.media_stop
+      data: {}
+      target:
+        entity_id: media_player.office_speaker
+  mode: single
+- id: "1670385896735"
+  alias: Garage camera dark mode on ➔ Manually set driveway camera to infared mode
+  description:
+    Since the driveway camera has trouble detecting "Dark mode" because
+    of the sidewalk lamp, use the Garage camera's sensor to manually make the switch.
+  trigger:
+    - type: turned_on
+      platform: device
+      device_id: 3609f5955c7c05caa406cca1d8331256
+      entity_id: binary_sensor.garage_is_dark
+      domain: binary_sensor
+  condition: []
+  action:
+    - device_id: 3f12c41270731c2cdca8b545f573dab0
+      domain: select
+      entity_id: select.driveway_infrared_mode
+      type: select_option
+      option: Always Enable
+  mode: single
+- id: "1670386137417"
+  alias:
+    Garage camera dark mode off ➔ Manually set driveway camera to non-infared
+    mode
+  description: ""
+  trigger:
+    - type: turned_off
+      platform: device
+      device_id: 3609f5955c7c05caa406cca1d8331256
+      entity_id: binary_sensor.garage_is_dark
+      domain: binary_sensor
+  condition: []
+  action:
+    - device_id: 3f12c41270731c2cdca8b545f573dab0
+      domain: select
+      entity_id: select.driveway_infrared_mode
+      type: select_option
+      option: Always Disable
+  mode: single

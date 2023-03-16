@@ -1,0 +1,388 @@
+# Network View
+
+title: Network
+path: "network"
+
+type: "custom:grid-layout"
+layout: !include snippets/layout-page-margin.yaml
+
+cards:
+  - type: "custom:layout-card"
+    layout_type: "custom:grid-layout"
+    view_layout:
+      grid-area: cc
+    layout:
+      grid-template-columns: "repeat(auto-fill, [col-start] minmax(320px, 1fr) [col-end])"
+      grid-template-rows: auto
+      grid-column-gap: 32px
+      margin: -1px
+      mediaquery:
+        "(max-width: 800px)":
+          grid-template-columns: "repeat(auto-fill, [col-start] minmax(256px, 1fr) [col-end])"
+
+    cards:
+      # [Header] Summary
+      - type: "custom:layout-card"
+        layout_type: "custom:grid-layout"
+        layout: !include snippets/layout-page-title.yaml
+        view_layout:
+          grid-column: 1/-1
+        cards:
+          - type: markdown
+            content: >
+              # Network
+
+              The Internet is {{ states('binary_sensor.cloudflare_ping') }}
+              and {{ states('sensor.unifi_status_wlan_num_user') }} wifi devices
+              are connected.{%- if states('sensor.unifi_status_www_xput_down') !=
+              'unavailable' -%}{{ ' ' }}The speed is {{ iif(
+              states('sensor.unifi_status_www_xput_down')|int >= 100, 'normal',
+              'slower than usual') }}.{%- endif -%}
+            style:
+              .: |
+                ha-card {
+                  background: none;
+                }
+              ha-markdown$: |
+                h1 {
+                  font-size: var(--title-font-size);
+                  font-weight: 500;
+                  line-height: 1.1;
+                  margin-left: -2px;
+                  margin-block-end: -8px;
+                }
+
+          - type: "custom:layout-card"
+            layout_type: "custom:horizontal-layout"
+            view_layout:
+              place-self: center start
+            cards:
+              - type: "custom:swipe-card"
+                parameters:
+                  breakpointBase: container
+                  enabled: true
+                  slidesPerView: 1.66
+                  breakpoints:
+                    "600":
+                      enabled: false
+                      slidesPerView: 2
+                cards:
+                  - type: "custom:mushroom-entity-card"
+                    entity: binary_sensor.cloudflare_ping
+                    name: WAN ↗
+                    icon_color: pink
+                    style: "ha-card {background: none;}"
+                    tap_action:
+                      action: url
+                      url_path: https://192.168.1.1
+
+                  - type: "custom:mushroom-entity-card"
+                    entity: sensor.unifi_status_wlan_num_user
+                    name: Router ↗
+                    icon: "mdi:router-wireless"
+                    icon_color: pink
+                    style: "ha-card {background: none;}"
+                    tap_action:
+                      action: url
+                      url_path: https://192.168.1.1
+
+      # [Column] Network Map
+      - type: vertical-stack
+        # view_layout:
+        #   grid-column: 1/-1
+        # card_mod:
+        #   style: |
+        #     :host {max-height: 320px;}
+        #     ha-card {max-height: 320px; overflow: visible;}
+        cards:
+          - type: "custom:button-card"
+            template: header_card_no_link
+            variables:
+              name: MAP
+            view_layout:
+              grid-column: 1/-1
+
+          - type: entities
+            card_mod:
+              style: |
+                #states > * {margin: 0 !important;}
+                #states {
+                  padding-top: 0 !important;
+                  xtransform: rotate(90deg) translateY(-100%);
+                  xtransform-origin: top left;
+                }
+                ha-card {background: none; xmax-height: 320px;}
+            entities:
+              - entity: binary_sensor.cloudflare_ping
+                type: "custom:button-card"
+                template: rail_station_row
+                variables:
+                  rail0_entity: binary_sensor.cloudflare_ping
+                  station_rail: 0
+                  terminate_at: top terminal
+                name: Cloudflare
+                label: 1.1.1.1
+                state_display: '[[[ return entity.attributes.round_trip_time_avg ? (Math.round(entity.attributes.round_trip_time_avg)) + "ms" : "Off" ]]]'
+
+              - entity: binary_sensor.google_ping
+                type: "custom:button-card"
+                template: rail_station_row
+                variables:
+                  rail0_entity: binary_sensor.cloudflare_ping
+                  rail1_entity: binary_sensor.google_ping
+                  station_rail: 1
+                  terminate_at: top
+                name: Google
+                label: "[[[ entity.last_changed ]]]"
+                state_display: '[[[ return entity.attributes.round_trip_time_avg ? (Math.round(entity.attributes.round_trip_time_avg)) + "ms" : "Off" ]]]'
+
+              - entity: binary_sensor.memoney_ping
+                type: "custom:button-card"
+                template: rail_station_row
+                variables:
+                  rail0_entity: binary_sensor.cloudflare_ping
+                  rail1_entity: binary_sensor.google_ping
+                  rail2_entity: binary_sensor.memoney_ping
+                  station_rail: 2
+                  terminate_at: top
+                name: MeMoney.io
+                label: "[[[ entity.last_changed ]]]"
+                state_display: '[[[ return entity.attributes.round_trip_time_avg ? (Math.round(entity.attributes.round_trip_time_avg)) + "ms" : "Off" ]]]'
+
+              - entity: sensor.unifi_status_wan_ip
+                type: "custom:button-card"
+                template: rail_interchange_row
+                variables:
+                  rail0_top_entity: binary_sensor.cloudflare_ping
+                  rail1_top_entity: binary_sensor.google_ping
+                  rail2_top_entity: binary_sensor.memoney_ping
+                  rail3_bottom_entity: sensor.unifi_status_wan_latency
+                  station_size_from: 0
+                  station_size_to: 3
+                name: External IP
+                label: "[[[ return entity.state ]]]"
+                state_display: " "
+                styles:
+                  custom_fields:
+                    station:
+                      - background-color: '[[[ return entity.state != "unavailable" ? "var(--primary-color)" : "var(--disabled-color)" ]]]'
+
+              - entity: sensor.unifi_status_wan_latency
+                type: "custom:button-card"
+                template: rail_station_row
+                variables:
+                  rail3_entity: sensor.unifi_status_wan_latency
+                  station_rail: 3
+                name: Modem
+                label: 192.168.
+                state_display: '[[[ return entity.state ? (Math.round(entity.state)) + "ms" : "Off" ]]]'
+
+              - type: "custom:button-card"
+                template: rail_section_row
+                variables:
+                  rail3_entity: binary_sensor.udm_ping
+                name: Firewall
+
+              - entity: binary_sensor.pi_hole
+                type: "custom:button-card"
+                template: rail_section_row
+                variables:
+                  rail3_entity: binary_sensor.pi_hole
+                  station_rail: 3
+                name: PiHole DNS
+                styles:
+                  custom_fields:
+                    station:
+                      - --station-color: '[[[ return entity.state == "on" ? "var(--primary-color)" : "var(--disabled-color)" ]]]'
+
+              - entity: binary_sensor.udm_ping
+                type: "custom:button-card"
+                template: rail_interchange_row
+                variables:
+                  rail0_bottom_entity: binary_sensor.1st_floor_ap_ping
+                  rail1_bottom_entity: binary_sensor.2nd_floor_ap_ping
+                  rail2_bottom_entity: binary_sensor.ubiquiti_24_port_switch_ping
+                  rail3_bottom_entity: binary_sensor.udm_ping
+                  rail3_top_entity: sensor.unifi_status_wan_latency
+                  station_size_from: 0
+                  station_size_to: 3
+                name: Router
+                label: 192.168.1.1
+                state_display: '[[[ return entity.attributes.round_trip_time_avg ? (Math.round(entity.attributes.round_trip_time_avg)) + "ms" : "Off" ]]]'
+
+              - entity: binary_sensor.ubiquiti_24_port_switch_ping
+                type: "custom:button-card"
+                template: rail_station_row
+                variables:
+                  rail0_entity: binary_sensor.1st_floor_ap_ping
+                  rail1_entity: binary_sensor.2nd_floor_ap_ping
+                  rail2_entity: binary_sensor.ubiquiti_24_port_switch_ping
+                  rail3_entity: binary_sensor.udm_ping
+                  station_rail: 2
+                  terminate_at: bottom
+                name: 24 Port Switch
+                label: 192.168.1.114
+                state_display: '[[[ return entity.attributes.round_trip_time_avg ? (Math.round(entity.attributes.round_trip_time_avg)) + "ms" : "Off" ]]]'
+
+              - entity: binary_sensor.udm_ping
+                type: "custom:button-card"
+                template: rail_station_row
+                variables:
+                  rail0_entity: binary_sensor.1st_floor_ap_ping
+                  rail1_entity: binary_sensor.2nd_floor_ap_ping
+                  rail3_entity: binary_sensor.udm_ping
+                  station_rail: 3
+                  terminate_at: bottom
+                name: Unifi Dream Machine
+                label: 192.168.1.1
+                state_display: "-"
+
+              - entity: binary_sensor.2nd_floor_ap_ping
+                type: "custom:button-card"
+                template: rail_station_row
+                variables:
+                  rail0_entity: binary_sensor.1st_floor_ap_ping
+                  rail1_entity: binary_sensor.2nd_floor_ap_ping
+                  station_rail: 1
+                  terminate_at: bottom
+                name: 2nd Floor Access Point
+                label: "[[[ entity.last_changed ]]]"
+                state_display: '[[[ return entity.attributes.round_trip_time_avg ? (Math.round(entity.attributes.round_trip_time_avg)) + "ms" : "Off" ]]]'
+
+              - entity: binary_sensor.1st_floor_ap_ping
+                type: "custom:button-card"
+                template: rail_station_row
+                variables:
+                  rail0_entity: binary_sensor.1st_floor_ap_ping
+                  station_rail: 0
+                  terminate_at: bottom terminal
+                name: 1st Floor Access Point
+                label: "[[[ entity.last_changed ]]]"
+                state_display: '[[[ return entity.attributes.round_trip_time_avg ? (Math.round(entity.attributes.round_trip_time_avg)) + "ms" : "Off" ]]]'
+
+      # [Column] Download
+      - type: vertical-stack
+        cards:
+          - type: "custom:button-card"
+            template: header_card_no_link
+            variables:
+              name: DOWNLOAD
+            view_layout:
+              grid-column-start: 1
+              grid-column-end: -1
+          - type: sensor
+            entity: sensor.unifi_status_www_xput_down
+            graph: line
+            detail: 2
+            name: SpeedTest Download
+          - hours_to_show: 24
+            graph: line
+            type: sensor
+            entity: sensor.unifi_status_wan_download
+            detail: 2
+            name: WAN Download Speed
+
+      # [Column] Upload
+      - type: vertical-stack
+        cards:
+          - type: "custom:button-card"
+            template: header_card_no_link
+            variables:
+              name: UPLOAD
+            view_layout:
+              grid-column-start: 1
+              grid-column-end: -1
+          - type: sensor
+            entity: sensor.unifi_status_www_xput_up
+            graph: line
+            detail: 2
+            name: SpeedTest Upload
+          - hours_to_show: 24
+            graph: line
+            type: sensor
+            entity: sensor.unifi_status_wan_upload
+            detail: 2
+            name: WAN Upload Speed
+
+      # [Column] T'Ping
+      - type: vertical-stack
+        cards:
+          - type: "custom:button-card"
+            template: header_card_no_link
+            variables:
+              name: PING
+            view_layout:
+              grid-column: 1/-1
+
+          - hours_to_show: 24
+            graph: line
+            type: sensor
+            entity: sensor.unifi_status_www_speedtest_ping
+            detail: 2
+
+          - type: "custom:uptime-card"
+            entity: binary_sensor.cloudflare_ping
+            color:
+              none: null
+            bar:
+              round: 0
+              height: 48
+              spacing: 4
+            init: {}
+            alias:
+              ok: Connected
+              ko: Disconnected
+            tap_action: {}
+            tooltip: {}
+            blink: {}
+
+      # [Column] Router
+      - type: vertical-stack
+        cards:
+          - type: "custom:button-card"
+            template: header_card
+            variables:
+              name: Unifi Dream Machine
+              label: More
+              arrow: "mdi:arrow-top-right"
+              action: url
+              link: !secret router_url
+            view_layout:
+              grid-column-start: 1
+              grid-column-end: -1
+          - type: sensor
+            graph: line
+            entity: sensor.unifi_status_wlan_num_user
+            name: Wifi Devices Connected
+            detail: 2
+          - hours_to_show: 24
+            graph: line
+            type: sensor
+            entity: sensor.unifi_status_wan_cpu
+            name: Router CPU Load
+            detail: 2
+            unit: "%"
+
+      # [Column] PiHole
+      - type: vertical-stack
+        cards:
+          - type: "custom:button-card"
+            template: header_card
+            variables:
+              name: PiHole
+              label: Manage
+              link: /a0d7b954_adguard
+            view_layout:
+              grid-column-start: 1
+              grid-column-end: -1
+          - type: sensor
+            graph: line
+            entity: sensor.pi_hole_ads_blocked_today
+          - type: sensor
+            graph: line
+            entity: sensor.pi_hole_dns_queries_today
+            detail: 2
+          - type: sensor
+            graph: line
+            entity: sensor.pi_hole_ads_percentage_blocked_today
+            detail: 2

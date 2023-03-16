@@ -1,0 +1,130 @@
+title: Home
+views:
+  - path: default_view
+    title: Home
+    cards:
+      - type: grid
+        square: false
+        columns: 1
+        cards:
+          - type: entities
+            entities:
+              - binary_sensor.garage_is_dark
+              - binary_sensor.doorbell_doorbell
+              - binary_sensor.doorbell_is_dark
+              - binary_sensor.driveway_is_dark
+              - binary_sensor.garage_motion
+              - binary_sensor.doorbell_motion
+              - binary_sensor.driveway_motion
+              - sensor.garage_detected_object
+              - sensor.doorbell_detected_object
+              - sensor.driveway_detected_object
+            title: Exterior
+          - type: media-control
+            entity: media_player.doorbell_speaker
+          - type: picture-entity
+            entity: camera.garage_high
+          - type: picture-entity
+            entity: camera.doorbell_high
+          - type: picture-entity
+            entity: camera.driveway_high
+      - type: entities
+        entities:
+          - sensor.hp_officejet_6950_black_ink
+          - sensor.hp_officejet_6950_cyan_ink
+          - sensor.hp_officejet_6950_magenta_ink
+          - sensor.hp_officejet_6950_yellow_ink
+          - sensor.hp_officejet_6950
+        title: Josh Office
+      - type: media-control
+        entity: media_player.kitchen_display
+      - type: entities
+        entities:
+          - binary_sensor.washer_wash_completed
+          - binary_sensor.dryer_dry_completed
+          - binary_sensor.washer_error_state
+          - binary_sensor.dryer_error_state
+          - sensor.washer
+          - sensor.dryer
+          - sensor.washer_current_course
+          - sensor.dryer_current_course
+          - sensor.washer_run_state
+          - sensor.dryer_run_state
+          - sensor.washer_spin_speed
+          - sensor.washer_water_temp
+          - sensor.dryer_temp_control
+          - sensor.washer_dry_level
+          - sensor.dryer_dry_level
+          - sensor.washer_error_message
+          - sensor.dryer_error_message
+          - switch.washer_power_off
+          - switch.dryer_power_off
+        title: Laundry Room
+      - type: entities
+        entities:
+          - sensor.plex_raspberrypi
+        title: Living Room
+      - type: grid
+        square: true
+        columns: 3
+        cards:
+          - type: picture-entity
+            entity: person.josh
+            aspect_ratio: "1"
+            show_name: false
+            image: /api/image/serve/e8ef18be4dc58fc1190e7a08d9b4a8dc/512x512
+          - type: picture-entity
+            entity: person.autum
+            aspect_ratio: "1"
+            show_name: false
+            image: >-
+              data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'
+              viewBox='0 0 50 50' width='50' height='50'
+              style='background-color:%23C30052'%3E%3Cg%3E%3Ctext
+              font-family='roboto' x='50%25' y='50%25' text-anchor='middle'
+              stroke='%23212121' font-size='1.3em'
+              dy='.3em'%3EA%3C/text%3E%3C/g%3E%3C/svg%3E
+          - type: picture-entity
+            entity: person.oljp
+            aspect_ratio: "1"
+            show_name: false
+            image: >-
+              data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'
+              viewBox='0 0 50 50' width='50' height='50'
+              style='background-color:%23C30052'%3E%3Cg%3E%3Ctext
+              font-family='roboto' x='50%25' y='50%25' text-anchor='middle'
+              stroke='%23212121' font-size='1.3em'
+              dy='.3em'%3Eo%3C/text%3E%3C/g%3E%3C/svg%3E
+      - type: entities
+        entities:
+          - binary_sensor.pi_hole
+        title: Binary sensor
+      - type: entities
+        entities:
+          - cover.garage_door_large
+          - cover.garage_door_small
+        title: Cover
+      - type: grid
+        square: false
+        columns: 1
+        cards:
+          - type: media-control
+            entity: media_player.plex_plex_web_chrome_osx
+          - type: media-control
+            entity: media_player.plex_plex_for_roku_65_tcl_roku_tv
+      - type: entities
+        entities:
+          - sensor.pi_hole_ads_blocked_today
+          - sensor.pi_hole_ads_percentage_blocked_today
+          - sensor.pi_hole_dns_queries_cached
+          - sensor.pi_hole_dns_queries_forwarded
+          - sensor.pi_hole_dns_queries_today
+          - sensor.pi_hole_dns_unique_clients
+          - sensor.pi_hole_dns_unique_domains
+          - sensor.pi_hole_domains_blocked
+          - sensor.pi_hole_seen_clients
+          - sensor.hacs
+        title: Sensor
+      - type: weather-forecast
+        entity: weather.home
+        show_forecast: false

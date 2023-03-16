@@ -1,0 +1,8 @@
+# Genesis View
+
+title: Genesis
+path: genesis
+
+type: panel
+cards:
+  - !include genesis-cards.yaml

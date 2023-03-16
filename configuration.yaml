@@ -1,0 +1,296 @@
+# Loads default set of integrations. Do not remove.
+default_config:
+
+homeassistant:
+  name: Home
+  latitude: 39.15919
+  longitude: -77.73303
+  elevation: 617
+  unit_system: imperial
+  country: US
+  # C for Celcius, F for Fahrenheit
+  temperature_unit: F
+  # Pick yours from here: http://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+  time_zone: America/New_York
+
+# Text to speech
+tts:
+  - platform: google_translate
+
+# empty block to initialize ffmpeg
+ffmpeg:
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+# import for chore tracking
+input_button: !include config/chores.yaml
+input_text: !include config/chores.yaml
+
+frontend:
+  themes: !include_dir_merge_named themes
+  # extra_module_url:
+  #   - /hacsfiles/lovelace-card-mod/card-mod.js
+
+lovelace:
+  mode: yaml
+  dashboards:
+    # Main Dashboard
+    ui-dashboard:
+      require_admin: false
+      show_in_sidebar: true
+      icon: mdi:gauge
+      title: Dashboard
+      filename: ui/ui-lovelace.yaml
+      mode: yaml
+  resources: !include lovelace-resources.yaml
+
+# Custom sensors
+sensor:
+  - platform: nws_alerts
+    zone_id: "VAZ505"
+
+  ## Outdoor weather sensors
+  - platform: template
+    sensors:
+      outdoor_temperature:
+        friendly_name_template: "Outdoor Temperature"
+        value_template: '{{ state_attr("weather.home", "temperature") }}'
+        unit_of_measurement: "°F"
+      outdoor_humidity:
+        friendly_name_template: "Outdoor Humidity"
+        value_template: '{{ state_attr("weather.home", "humidity") }}'
+        unit_of_measurement: "%"
+      outdoor_pressure:
+        friendly_name_template: "Outdoor Air Pressure"
+        value_template: '{{ state_attr("weather.home", "pressure") }}'
+        unit_of_measurement: "inHg"
+      outdoor_wind_speed:
+        friendly_name_template: "Outdoor Wind Speed"
+        value_template: '{{ state_attr("weather.home", "wind_speed") }}'
+        unit_of_measurement: "mp/h"
+      indoor_outdoor_temp_difference:
+        friendly_name_template: "Indoor/Outdoor Temperature Difference"
+        value_template: "{{ ((states('sensor.main_floor_temperature') | float ) - (states('sensor.outdoor_temperature') | float )) | round(2) }}"
+        unit_of_measurement: "°F"
+      indoor_outdoor_temp_difference_text:
+        friendly_name_template: "Indoor/Outdoor Temperature Difference Text"
+        value_template: >
+          {%- set diff = ((states('sensor.main_floor_temperature') | float ) - (states('sensor.outdoor_temperature') | float )) | round(2) %}
+          {{ 'Warmer' if diff > 0 else 'Cooler' }}
+      indoor_outdoor_humidity_difference:
+        friendly_name_template: "Indoor/Outdoor Humidity Difference"
+        value_template: "{{ ((states('sensor.main_floor_humidity') | float ) - (states('sensor.outdoor_humidity') | float )) | round(2) }}"
+        unit_of_measurement: "%"
+      indoor_outdoor_humidity_difference_text:
+        friendly_name_template: "Indoor/Outdoor Humidity Difference Text"
+        value_template: >
+          {%- set diff = ((states('sensor.main_floor_humidity') | float ) - (states('sensor.outdoor_humidity') | float )) | round(2) %}
+          {{ 'Drier' if diff > 0 else 'Wetter' }}
+      outdoor_wind_direction:
+        value_template: >
+          {% set direction = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW','N'] %}
+          {% set degree = state_attr("weather.home", "wind_bearing")|float %}
+          {{ direction[((degree+11.25)/22.5)|int] }}
+      sun_elevation:
+        friendly_name_template: "Sun Elevation"
+        value_template: '{{ state_attr("sun.sun", "elevation") }}'
+        unit_of_measurement: "°"
+
+  ## Misc climate sensors
+  - platform: min_max
+    type: mean
+    name: Indoor Temperature (Average)
+    round_digits: 2
+    entity_ids:
+      - sensor.main_floor_temperature
+      - sensor.upstairs_temperature
+  - platform: min_max
+    type: mean
+    name: Indoor Humidity (Average)
+    round_digits: 2
+    entity_ids:
+      - sensor.main_floor_humidity
+      - sensor.upstairs_humidity
+
+  ## Unifi Dream Machine sensors https://github.com/zvldz/unifi_status
+  - platform: unifi_status
+    host: !secret unifi_host_udm
+    port: 443
+    version: UDMP-unifiOS
+    username: !secret unifi_username
+    password: !secret unifi_password
+    monitored_conditions:
+      - www
+      - wan
+      - wlan
+      - lan
+      - alerts
+      - firmware
+  - platform: template
+    sensors:
+      unifi_status_wan_cpu:
+        friendly_name: "CPU"
+        unit_of_measurement: "%"
+        value_template: "{{ states.sensor.unifi_status_wan.attributes['gw_system-stats']['cpu'] }}"
+      unifi_status_wan_mem:
+        friendly_name: "Memory"
+        unit_of_measurement: "%"
+        value_template: "{{ states.sensor.unifi_status_wan.attributes['gw_system-stats']['mem'] }}"
+      unifi_status_wan_ip:
+        friendly_name: "WAN IP"
+        value_template: "{{ states.sensor.unifi_status_wan.attributes.wan_ip }}"
+      unifi_status_wan_download:
+        friendly_name: "WAN Download"
+        unit_of_measurement: Kbps
+        icon_template: "mdi:progress-download"
+        value_template: "{{ (states.sensor.unifi_status_wan.attributes['rx_bytes-r'] / 1024) | int }}"
+      unifi_status_wan_upload:
+        friendly_name: "WAN Upload"
+        unit_of_measurement: Kbps
+        icon_template: "mdi:progress-upload"
+        value_template: "{{ (states.sensor.unifi_status_wan.attributes['tx_bytes-r'] / 1024) | int }}"
+      unifi_status_wan_latency:
+        friendly_name: "WAN Latency"
+        unit_of_measurement: ms
+        icon_template: "mdi:wan"
+        value_template: "{{ states.sensor.unifi_status_wan.attributes['uptime_stats']['WAN']['latency_average'] }}"
+      unifi_status_wan_uptime:
+        friendly_name: "UDM Uptime"
+        value_template: >
+          {%- set time = states.sensor.unifi_status_wan.attributes['gw_system-stats']['uptime'] | int %}
+          {%- set minutes = ((time % 3600) // 60) %}
+          {%- set minutes = '{}min'.format(minutes) if minutes > 0 else '' %}
+          {%- set hours = ((time % 86400) // 3600) %}
+          {%- set hours = '{}hr '.format(hours) if hours > 0 else '' %}
+          {%- set days = (time // 86400) %}
+          {%- set days = '{}d '.format(days) if days > 0 else '' %}
+          {{ 'Less than 1 min' if time < 60 else days + hours + minutes }}
+      unifi_status_firmware_version:
+        friendly_name: "UDM Firmware Version"
+        icon_template: "mdi:database-plus"
+        value_template: "{{ states.sensor.unifi_status_wan.attributes.gw_version }}"
+      unifi_status_www_xput_down:
+        friendly_name: "UDM Speedtest Download"
+        unit_of_measurement: Mbps
+        icon_template: "mdi:progress-download"
+        value_template: "{{ states.sensor.unifi_status_www.attributes.xput_down }}"
+      unifi_status_www_xput_up:
+        friendly_name: "UDM Speedtest Upload"
+        unit_of_measurement: Mbps
+        icon_template: "mdi:progress-upload"
+        value_template: "{{ states.sensor.unifi_status_www.attributes.xput_up }}"
+      unifi_status_www_speedtest_ping:
+        friendly_name: "UDM Speedtest Ping"
+        unit_of_measurement: ms
+        icon_template: "mdi:progress-clock"
+        value_template: "{{ states.sensor.unifi_status_www.attributes.speedtest_ping }}"
+      unifi_status_www_uptime:
+        friendly_name: "Internet Uptime"
+        value_template: >
+          {%- set time = states.sensor.unifi_status_www.attributes.uptime | int %}
+          {%- set minutes = ((time % 3600) // 60) %}
+          {%- set minutes = '{}min'.format(minutes) if minutes > 0 else '' %}
+          {%- set hours = ((time % 86400) // 3600) %}
+          {%- set hours = '{}hr '.format(hours) if hours > 0 else '' %}
+          {%- set days = (time // 86400) %}
+          {%- set days = '{}d '.format(days) if days > 0 else '' %}
+          {{ 'Less than 1 min' if time < 60 else days + hours + minutes }}
+      unifi_status_wlan_num_user:
+        friendly_name: "Users Wifi"
+        icon_template: "mdi:account-multiple"
+        value_template: "{{ states.sensor.unifi_status_wlan.attributes.num_user }}"
+      unifi_status_lan_num_user:
+        friendly_name: "Users Lan"
+        icon_template: "mdi:account-multiple"
+        value_template: "{{ states.sensor.unifi_status_lan.attributes.num_user }}"
+
+binary_sensor:
+  - platform: ping
+    host: google.com
+    name: "Google Ping"
+  - platform: ping
+    host: 1.1.1.1
+    name: Cloudflare Ping
+  - platform: ping
+    host: memoney.io
+    name: MeMoney Ping
+  - platform: ping
+    host: 192.168.1.1
+    name: UDM Ping
+  - platform: ping
+    host: 192.168.1.8
+    name: Media Server Ping
+  - platform: ping
+    host: 192.168.1.114
+    name: Ubiquiti 24-Port Switch Ping
+  - platform: ping
+    host: 192.168.1.243
+    name: 1st Floor AP Ping
+  - platform: ping
+    host: 192.168.1.199
+    name: 2nd Floor AP Ping
+  - platform: ffmpeg_noise
+    name: Nursery room noise
+    input: rtsp://192.168.1.1:7447/ZQlMvQlJDXVXwy80
+    # extra_arguments: -filter:a highpass=f=300,lowpass=f=2500,volume=volume=2 -codec:a libmp3lame -ar 16000
+    extra_arguments: -codec:a libmp3lame
+    output: -f mp3 icecast://bpstream:c4nplHR621ju@192.168.1.8:9200/babyphone.mp3
+    initial_state: false
+    duration: 2
+    reset: 60
+    peak: -32
+
+input_boolean:
+  babyphone:
+    name: babyphone
+    initial: off
+
+group:
+  chore_plants:
+    name: "Plant Chores"
+    entities:
+      - input_button.chore_water_plants
+  chore_kitchen:
+    name: "Kitchen Chores"
+    entities:
+      - input_button.chore_clean_bedroom_floor
+      - input_button.chore_clean_kitchen_counter
+      - input_button.chore_clean_kitchen_exhaust_fan
+      - input_button.chore_clean_kitchen_floor
+      - input_button.chore_clean_kitchen_sink
+      - input_button.chore_clean_kitchen_stove
+      - input_button.chore_change_kitchen_hand_towels
+      - input_button.chore_change_sponge
+      - input_button.chore_clean_tables
+  chore_bathroom:
+    name: "Bathroom Chores"
+    entities:
+      - input_button.chore_change_bath_mat
+      - input_button.chore_change_hand_towels
+      - input_button.chore_change_shower_curtain
+      - input_button.chore_clean_bathroom_floor
+      - input_button.chore_clean_bathtub
+      - input_button.chore_clean_shower
+      - input_button.chore_clean_toilet
+  chore_living_room:
+    name: "Living Room Chores"
+    entities:
+      - input_button.chore_dust_bookshelves
+      - input_button.chore_dust_lights
+      - input_button.chore_dust_window_blinds
+      - input_button.chore_clean_windows
+      - input_button.chore_wipe_floors
+  chore_primary:
+    name: "Primary Chores"
+    entities:
+      - input_button.chore_change_bed_sheets
+      - input_button.chore_clothes_laundry
+
+anniversaries:
+  sensors:
+    - name: Josh's Birthday
+      date: "1988-07-17"
+    - name: Autum's Birthday
+      date: "1990-11-01"

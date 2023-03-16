@@ -1,0 +1,8 @@
+# Terpsichora View
+
+title: Terpsichora
+path: terpsichora
+
+type: panel
+cards:
+  - !include terpsichora-cards.yaml
